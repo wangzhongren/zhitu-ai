@@ -1,0 +1,55 @@
+{
+  "name": "zhitu",
+  "productName": "知图",
+  "version": "1.0.0",
+  "description": "AI 知识图谱学习助手",
+  "main": "../electron/main.cjs",
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc -b && vite build",
+    "preview": "vite preview",
+    "electron:dev": "vite build && electron .",
+    "electron:dist": "vite build && electron-builder --mac --dir",
+    "electron:dmg": "vite build && electron-builder --mac"
+  },
+  "build": {
+    "appId": "com.scriptorium.app",
+    "productName": "知图",
+    "directories": {
+      "output": "release"
+    },
+    "files": [
+      "dist/**/*",
+      "../electron/**/*",
+      "../backend/**/*"
+    ],
+    "extraResources": [
+      {
+        "from": "../backend",
+        "to": "backend"
+      }
+    ],
+    "mac": {
+      "target": "dmg",
+      "category": "public.app-category.education"
+    }
+  },
+  "dependencies": {
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "zustand": "^5.0.3"
+  },
+  "devDependencies": {
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@vitejs/plugin-react": "^4.3.4",
+    "autoprefixer": "^10.4.20",
+    "electron": "^33.3.1",
+    "electron-builder": "^25.1.8",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.17",
+    "typescript": "~5.6.2",
+    "vite": "^6.0.7"
+  }
+}
