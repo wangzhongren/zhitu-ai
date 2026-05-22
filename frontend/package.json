@@ -3,7 +3,7 @@
   "productName": "知图",
   "version": "1.0.0",
   "description": "AI 知识图谱学习助手",
-  "main": "../electron/main.cjs",
+  "main": "electron-main.cjs",
   "type": "module",
   "scripts": {
     "dev": "vite",
@@ -11,29 +11,32 @@
     "preview": "vite preview",
     "electron:dev": "vite build && electron .",
     "electron:dist": "vite build && electron-builder --mac --dir",
-    "electron:dmg": "vite build && electron-builder --mac"
+    "electron:dmg": "vite build && electron-builder --mac",
+    "electron:all": "vite build && electron-builder --mac --win --linux"
   },
   "build": {
-    "appId": "com.scriptorium.app",
+    "appId": "com.zhitu.app",
     "productName": "知图",
     "directories": {
       "output": "release"
     },
     "files": [
       "dist/**/*",
-      "../electron/**/*",
-      "../backend/**/*"
+      "electron-main.cjs"
     ],
     "extraResources": [
       {
         "from": "../backend",
-        "to": "backend"
+        "to": "backend",
+        "filter": ["**/*", "!__pycache__", "!*.db"]
       }
     ],
     "mac": {
       "target": "dmg",
-      "category": "public.app-category.education"
-    }
+      "category": "public.app-category.education",
+      "icon": null
+    },
+    "asar": false
   },
   "dependencies": {
     "react": "^18.3.1",

@@ -5,12 +5,11 @@ const http = require('http')
 
 const PORT = 18674
 const isDev = !app.isPackaged
-// In dev: ../backend relative to electron/, in packaged: backend/ in resources
 const BACKEND_DIR = isDev
   ? path.join(__dirname, '..', 'backend')
   : path.join(process.resourcesPath, 'backend')
 const FRONTEND_DIST = isDev
-  ? path.join(__dirname, '..', 'frontend', 'dist')
+  ? path.join(__dirname, 'dist')
   : path.join(__dirname, 'dist')
 
 let mainWindow = null

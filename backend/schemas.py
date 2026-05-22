@@ -7,6 +7,7 @@ class ChatRequest(BaseModel):
     session_id: str
     text: str
     context_node_id: Optional[str] = None
+    display_text: Optional[str] = None
 
 
 class NodeSchema(BaseModel):

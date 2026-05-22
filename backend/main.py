@@ -118,7 +118,9 @@ async def chat(body: ChatRequest, db: DBSession = Depends(get_db)):
         raise HTTPException(status_code=404, detail="Session not found")
 
     # Save user message
-    user_msg = Message(id=uuid.uuid4().hex[:12], session_id=session.id, role="user", content=body.text)
+    # Store display version for history, full version for AI
+    display_content = body.display_text or body.text
+    user_msg = Message(id=uuid.uuid4().hex[:12], session_id=session.id, role="user", content=display_content)
     db.add(user_msg)
     db.commit()
 
@@ -301,6 +303,43 @@ def health():
         "status": "ok",
         "has_api_key": bool(os.getenv("OPENAI_API_KEY") and os.getenv("OPENAI_API_KEY") != "sk-your-key-here"),
     }
+
+
+# --- File Upload ---
+
+from fastapi import UploadFile, File
+
+@app.post("/api/upload")
+async def upload_file(file: UploadFile = File(...)):
+    filename = file.filename or ""
+    content = ""
+    ext = filename.rsplit(".", 1)[-1].lower() if "." in filename else ""
+
+    if ext in ("txt", "md", "markdown", "json", "py", "js", "ts", "html", "css", "yaml", "yml", "xml", "csv"):
+        content = (await file.read()).decode("utf-8", errors="replace")
+    elif ext == "docx":
+        try:
+            from docx import Document
+            from io import BytesIO
+            doc = Document(BytesIO(await file.read()))
+            parts = [p.text for p in doc.paragraphs if p.text.strip()]
+            # Also extract text from tables
+            for table in doc.tables:
+                for row in table.rows:
+                    for cell in row.cells:
+                        txt = cell.text.strip()
+                        if txt:
+                            parts.append(txt)
+            content = "\n".join(parts) if parts else "[未提取到文字内容，请确认文档包含文字]"
+        except Exception:
+            content = "[无法解析 docx 文件]"
+    else:
+        content = f"[不支持的文件格式: .{ext}]"
+
+    if len(content) > 50000:
+        content = content[:50000] + "\n...(内容已截断)"
+
+    return {"filename": filename, "content": content, "size": len(content)}
 
 
 # --- Settings ---

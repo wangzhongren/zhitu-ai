@@ -18,7 +18,9 @@ export default function ChatPanel() {
   const selectedNode = nodes.find((n) => n.id === selectedNodeId)
 
   const [input, setInput] = useState('')
+  const [attachedFile, setAttachedFile] = useState<{ name: string; content: string } | null>(null)
   const chatEndRef = useRef<HTMLDivElement>(null)
+  const fileRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
     chatEndRef.current?.scrollIntoView({ behavior: 'smooth' })
@@ -45,14 +47,43 @@ export default function ChatPanel() {
     } catch { /* skip */ }
   }
 
+  async function handleFile(e: React.ChangeEvent<HTMLInputElement>) {
+    const file = e.target.files?.[0]
+    if (!file) return
+    const ext = file.name.split('.').pop()?.toLowerCase() || ''
+    if (ext === 'txt' || ext === 'md' || ext === 'markdown') {
+      const text = await file.text()
+      setAttachedFile({ name: file.name, content: text })
+    } else {
+      const form = new FormData()
+      form.append('file', file)
+      const base = window.location.protocol === 'file:' ? 'http://localhost:18674' : ''
+      try {
+        const res = await fetch(base + '/api/upload', { method: 'POST', body: form })
+        if (!res.ok) throw new Error(`HTTP ${res.status}`)
+        const data = await res.json()
+        setAttachedFile({ name: file.name, content: data.content || '[文件为空]' })
+      } catch (e: any) {
+        setAttachedFile({ name: file.name, content: `[读取失败: ${e.message}]` })
+      }
+    }
+    if (fileRef.current) fileRef.current.value = ''
+  }
+
   async function handleSubmit() {
     const text = input.trim()
     if (!text || !sessionId || isStreaming) return
 
-    const displayText = selectedNode ? `「${selectedNode.label}」\n${text}` : text
+    let aiText = selectedNode ? `「${selectedNode.label}」\n${text}` : text
+    let displayText = aiText
+    if (attachedFile) {
+      aiText = `我上传了一份文件「${attachedFile.name}」，内容如下：\n\n${attachedFile.content}\n\n---\n根据以上文件内容，${aiText}`
+      displayText = `📎「${attachedFile.name}」\n${text}`
+    }
     addMessage({ role: 'user', content: displayText })
     const ctxNodeId = selectedNodeId
     setInput('')
+    setAttachedFile(null)
     setSelectedNodeId(null)
     setStreaming(true)
 
@@ -61,7 +92,7 @@ export default function ChatPanel() {
       res = await api('/api/chat', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ session_id: sessionId, text, context_node_id: ctxNodeId }),
+        body: JSON.stringify({ session_id: sessionId, text: aiText, context_node_id: ctxNodeId, display_text: displayText }),
       })
     } catch {
       setStreaming(false)
@@ -158,6 +189,17 @@ export default function ChatPanel() {
 
       {/* Input */}
       <div className="p-4 border-t border-slate-200 bg-white shrink-0">
+        {/* Attached file indicator */}
+        {attachedFile && (
+          <div className="flex items-center gap-2 mb-2">
+            <span className="inline-flex items-center gap-1.5 bg-green-50 border border-green-200 text-green-700 text-xs px-2.5 py-1 rounded-lg">
+              <svg width="12" height="12" viewBox="0 0 16 16" fill="currentColor"><path d="M4 1.5a.5.5 0 01.5-.5h7a.5.5 0 01.5.5v13a.5.5 0 01-.5.5h-7a.5.5 0 01-.5-.5v-13z"/></svg>
+              {attachedFile.name}
+              <button onClick={() => setAttachedFile(null)} className="text-green-500 hover:text-green-700 ml-0.5">&times;</button>
+            </span>
+            <span className="text-[10px] text-slate-400">已附加，将随消息发送</span>
+          </div>
+        )}
         {selectedNode && (
           <div className="flex items-center gap-2 mb-2">
             <span className="inline-flex items-center gap-1.5 bg-blue-50 border border-blue-200 text-blue-700 text-xs px-2.5 py-1 rounded-lg">
@@ -169,6 +211,15 @@ export default function ChatPanel() {
           </div>
         )}
         <div className="flex gap-2 items-end">
+          <input type="file" ref={fileRef} onChange={handleFile} className="hidden" accept=".txt,.md,.docx,.json,.py,.js,.ts,.html,.css,.yaml,.yml,.xml,.csv" />
+          <button
+            onClick={() => fileRef.current?.click()}
+            disabled={isStreaming}
+            className="w-9 h-9 rounded-xl bg-slate-100 hover:bg-slate-200 flex items-center justify-center text-slate-400 hover:text-slate-600 transition-colors shrink-0"
+            title="附加文件"
+          >
+            <svg width="16" height="16" viewBox="0 0 16 16" fill="none" stroke="currentColor" strokeWidth="1.5"><path d="M8 1v10M4 5l4-4 4 4M3 11v3a1 1 0 001 1h8a1 1 0 001-1v-3"/></svg>
+          </button>
           <textarea
             className="flex-1 bg-slate-100 border-0 rounded-xl px-4 py-2.5 text-sm text-slate-700 placeholder-slate-400 outline-none focus:ring-2 focus:ring-blue-200 focus:bg-white transition-all resize-none"
             placeholder="输入你想理解的技术话题..."
