@@ -1,0 +1,155 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ===== 知图 — VS Code Dark Theme ===== */
+@layer base {
+  :root {
+    /* VS Code dark - #1e1e2e base */
+    --background: 240 21% 15%;
+    --foreground: 226 60% 88%;
+
+    --card: 240 21% 20%;
+    --card-foreground: 226 60% 88%;
+
+    --popover: 240 21% 20%;
+    --popover-foreground: 226 60% 88%;
+
+    --primary: 234 55% 60%;
+    --primary-foreground: 0 0% 100%;
+
+    --secondary: 240 21% 24%;
+    --secondary-foreground: 226 60% 88%;
+
+    --muted: 240 19% 27%;
+    --muted-foreground: 228 20% 60%;
+
+    --accent: 234 40% 28%;
+    --accent-foreground: 234 55% 80%;
+
+    --destructive: 0 72% 51%;
+    --destructive-foreground: 0 0% 100%;
+
+    --border: 240 19% 27%;
+    --input: 240 19% 27%;
+    --ring: 234 55% 60%;
+    --radius: 0.5rem;
+
+    /* Sidebar - #181825 slightly deeper */
+    --sidebar: 240 21% 12%;
+    --sidebar-foreground: 226 60% 88%;
+    --sidebar-muted: 228 20% 55%;
+    --sidebar-accent: 240 21% 18%;
+    --sidebar-border: 240 19% 22%;
+
+    --success: 152 60% 42%;
+    --warning: 38 92% 50%;
+  }
+
+  * {
+    @apply border-border;
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+  }
+
+  html {
+    font-size: 14px;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    text-rendering: optimizeLegibility;
+  }
+
+  body {
+    background: #1e1e2e;
+    color: hsl(var(--foreground));
+    font-family: 'Inter', 'Noto Sans SC', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-weight: 400;
+    line-height: 1.6;
+    height: 100vh;
+    overflow: hidden;
+    letter-spacing: -0.01em;
+  }
+
+  ::-webkit-scrollbar { width: 4px; height: 4px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: hsl(240 19% 30%); border-radius: 2px; }
+  ::-webkit-scrollbar-thumb:hover { background: hsl(240 19% 40%); }
+
+  ::selection { background: hsl(234 55% 60% / 0.3); }
+}
+
+@layer components {
+  .msg {
+    transform: translateY(3px);
+    opacity: 0;
+    animation: settle-in 0.2s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+  }
+}
+
+@keyframes settle-in {
+  to { transform: translateY(0); opacity: 1; }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { transform: scale(0.8); opacity: 0.3; }
+  50% { transform: scale(1); opacity: 1; }
+}
+
+/* Prose for dark theme */
+@layer components {
+  .prose-chat { line-height: 1.7; font-size: 13px; color: hsl(var(--foreground)); }
+  .prose-chat h1 { font-size: 15px; font-weight: 600; margin-top: 14px; margin-bottom: 6px; color: hsl(var(--foreground)); }
+  .prose-chat h2 { font-size: 14px; font-weight: 600; margin-top: 12px; margin-bottom: 4px; color: hsl(var(--foreground)); }
+  .prose-chat h3 { font-size: 13px; font-weight: 600; margin-top: 10px; margin-bottom: 4px; color: hsl(var(--foreground)); }
+  .prose-chat p { margin-bottom: 6px; }
+  .prose-chat p:last-child { margin-bottom: 0; }
+  .prose-chat ul { list-style: none; padding-left: 0; }
+  .prose-chat ul li { display: flex; gap: 8px; margin-bottom: 2px; }
+  .prose-chat ul li::before { content: '•'; color: hsl(var(--muted-foreground)); flex-shrink: 0; }
+  .prose-chat ol { list-style: none; padding-left: 0; counter-reset: item; }
+  .prose-chat ol li { display: flex; gap: 8px; margin-bottom: 2px; counter-increment: item; }
+  .prose-chat ol li::before { content: counter(item) '.'; color: hsl(var(--muted-foreground)); min-width: 1.2em; flex-shrink: 0; }
+  .prose-chat blockquote {
+    border-left: 2px solid hsl(var(--primary) / 0.5);
+    padding-left: 12px;
+    color: hsl(var(--muted-foreground));
+    margin: 8px 0;
+  }
+  .prose-chat code {
+    background: hsl(240 21% 24%);
+    color: hsl(var(--primary));
+    padding: 1px 5px;
+    border-radius: 3px;
+    font-size: 12px;
+    font-family: 'JetBrains Mono', 'Fira Code', monospace;
+  }
+  .prose-chat pre {
+    background: hsl(240 21% 12%);
+    color: hsl(226 60% 88%);
+    padding: 12px 14px;
+    border-radius: 6px;
+    overflow-x: auto;
+    margin: 8px 0;
+    font-size: 12px;
+    line-height: 1.65;
+    border: 1px solid hsl(var(--border));
+  }
+  .prose-chat pre code {
+    background: none;
+    color: inherit;
+    padding: 0;
+    font-size: inherit;
+  }
+  .prose-chat hr {
+    border: none;
+    border-top: 1px solid hsl(var(--border));
+    margin: 10px 0;
+  }
+  .prose-chat strong { font-weight: 600; color: hsl(var(--foreground)); }
+  .prose-chat a { color: hsl(var(--primary)); }
+  .prose-chat a:hover { text-decoration: underline; }
+  .prose-chat table { width: 100%; border-collapse: collapse; margin: 8px 0; font-size: 12px; }
+  .prose-chat th { text-align: left; font-weight: 500; padding: 6px 10px; border-bottom: 1px solid hsl(var(--border)); color: hsl(var(--muted-foreground)); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; }
+  .prose-chat td { padding: 6px 10px; border-bottom: 1px solid hsl(var(--border)); }
+}
