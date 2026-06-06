@@ -12,6 +12,17 @@ import { Input } from '@/components/ui/input'
 import { Button } from '@/components/ui/button'
 import { Check, Loader2, Key, Globe, Cpu } from 'lucide-react'
 
+// EDEP Trace - uses sendBeacon for reliable cross-origin delivery
+function trace(traceId: string, entry: any) {
+  console.log(`[EDEP] ${traceId}`, entry)
+  try {
+    const blob = new Blob([JSON.stringify({ trace_id: traceId, ...entry, timestamp: new Date().toISOString() })], { type: 'application/json' })
+    navigator.sendBeacon('http://localhost:9876/traces', blob)
+  } catch (e) {
+    console.error('[EDEP] beacon error:', e)
+  }
+}
+
 interface Props {
   open: boolean
   onClose: () => void
@@ -36,19 +47,25 @@ export default function SettingsPanel({ open, onClose }: Props) {
   }, [open])
 
   async function save() {
+    const traceId = 'settings-' + Date.now()
+    trace(traceId, { module: 'SettingsPanel', method: 'save', direction: 'START', value: { apiKey: apiKey ? apiKey.slice(0, 6) + '...' : '(empty)', baseUrl, model } })
+
     setSaving(true)
     setMsg('')
     try {
+      trace(traceId, { module: 'SettingsPanel', method: 'save', direction: 'API_CALL' })
       const r = await api('/api/settings', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ api_key: apiKey, base_url: baseUrl, model: model }),
       })
-      const d = await r.json()
-      setMsg(d.message || '保存成功')
-    } catch {
-      setMsg('保存失败')
+      trace(traceId, { module: 'SettingsPanel', method: 'save', direction: 'API_RESPONSE', value: { r, type: typeof r } })
+      setMsg(r.message || '保存成功')
+    } catch (e: any) {
+      console.error('[SettingsPanel] save error:', e?.message, e?.status, e)
+      setMsg('保存失败: ' + (e?.message || JSON.stringify(e)))
     }
+    trace(traceId, { module: 'SettingsPanel', method: 'save', direction: 'END' })
     setSaving(false)
   }
 

@@ -67,7 +67,7 @@ function createMainWindow() {
     minHeight: MIN_HEIGHT,
     title: APP_NAME,
     show: false,
-    backgroundColor: '#1e1e2e',
+    backgroundColor: '#1e1e1e',
     frame: isMac,                    // macOS: needs frame for traffic lights; Win/Linux: frameless
     titleBarStyle: isMac ? 'hidden' : undefined,  // macOS: hide title bar text, keep traffic lights
     webPreferences: {

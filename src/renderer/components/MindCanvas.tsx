@@ -3,17 +3,17 @@ import { useStore } from '../store/scriptoriumStore'
 import type { MindNode, MindEdge } from '../types'
 import { Download } from 'lucide-react'
 
-const H_GAP = 280, MIN_GAP = 24, MARGIN = 100
+const H_GAP = 260, MIN_GAP = 20, MARGIN = 100
 
-// Dark theme colors
+// VSCode dark colors
 const C = {
-  bg: '#1e1e2e',
-  primary: '#5E6AD2',
-  text: '#cdd6f4',
+  bg: '#1e1e1e',
+  primary: '#007acc',
+  text: '#d4d4d4',
   muted: '#8b8fa3',
-  border: '#383850',
-  accent: '#9b9da4',
-  error: '#e03e3e',
+  border: '#3c3c3c',
+  borderLight: '#444',
+  error: '#EF4444',
   errorLight: '#3a2020',
   success: '#16a34a',
 }
@@ -22,29 +22,34 @@ interface TreeNode {
   node: MindNode
   children: TreeNode[]
   x: number; y: number
-  h: number
+  h: number; tw: number
 }
 
-function buildTree(nodes: MindNode[]): TreeNode | null {
+function buildTree(nodes: MindNode[], collapsedSet: Set<string>): TreeNode | null {
   if (nodes.length === 0) return null
   const map = new Map<string, TreeNode>()
-  nodes.forEach((n) => map.set(n.id, { node: n, children: [], x: 0, y: 0, h: 28 }))
+  nodes.forEach((n) => map.set(n.id, { node: n, children: [], x: 0, y: 0, h: 32, tw: 140 }))
   const roots: TreeNode[] = []
   nodes.forEach((n) => {
     const tn = map.get(n.id)!
-    if (n.parent_id && map.has(n.parent_id)) map.get(n.parent_id)!.children.push(tn)
-    else roots.push(tn)
+    // Skip children of collapsed nodes
+    if (n.parent_id && map.has(n.parent_id) && !collapsedSet.has(n.parent_id)) {
+      map.get(n.parent_id)!.children.push(tn)
+    } else if (!n.parent_id) {
+      roots.push(tn)
+    }
   })
   if (roots.length === 1) return roots[0]
   if (roots.length > 1) {
     return {
       node: { id: '__vr__', parent_id: null, label: '', layer_depth: -1, status: 'stable', x: 0, y: 0, cognitive_dimension: '', description: '' },
-      children: roots, x: 0, y: 0, h: 0,
+      children: roots, x: 0, y: 0, h: 0, tw: 0,
     }
   }
   return null
 }
 
+// Left-to-right tree layout
 function layoutTree(tn: TreeNode, depth: number, startY: number): number {
   const x = MARGIN + depth * H_GAP
   if (tn.children.length === 0) { tn.x = x; tn.y = startY + tn.h / 2; return startY + tn.h + MIN_GAP }
@@ -56,7 +61,7 @@ function layoutTree(tn: TreeNode, depth: number, startY: number): number {
 }
 
 const DIM_COLORS: Record<string, string> = {
-  core: '#5E6AD2', concept: '#8B5CF6', principle: '#06B6D4',
+  core: '#007acc', concept: '#3b8eea', principle: '#0099cc',
   practice: '#10B981', performance: '#F59E0B', security: '#EF4444',
   testing: '#6366F1', general: '#94A3B8',
 }
@@ -91,10 +96,11 @@ export default function MindCanvas() {
   const start = useRef({ x: 0, y: 0 })
   const [tooltip, setTooltip] = useState<{ text: string; x: number; y: number } | null>(null)
   const [toast, setToast] = useState('')
+  const [collapsedSet, setCollapsedSet] = useState<Set<string>>(new Set())
 
   const { treeNodes, parentPairs, totalW, totalH } = useMemo(() => {
     if (nodes.length === 0) return { treeNodes: [], parentPairs: new Set<string>(), totalW: 600, totalH: 400 }
-    const root = buildTree(nodes)
+    const root = buildTree(nodes, collapsedSet)
     if (!root) return { treeNodes: [], parentPairs: new Set<string>(), totalW: 600, totalH: 400 }
 
     const nodeInfo = new Map<string, { lines: string[]; tw: number; h: number; accent: string; isRoot: boolean }>()
@@ -102,7 +108,7 @@ export default function MindCanvas() {
       if (tn.node.id !== '__vr__') {
         const isRoot = tn.node.layer_depth === 0
         const labelW = measureText(tn.node.label, isRoot ? 14 : 12.5)
-        const maxLineW = Math.max(labelW, 180) - 8
+        const maxLineW = Math.max(labelW, 200) - 8
         let lines: string[] = []
         if (tn.node.description) {
           let cur = ''
@@ -113,9 +119,10 @@ export default function MindCanvas() {
           if (cur) lines.push(cur)
         }
         const lc = lines.length
-        const h = lc > 0 ? 28 + lc * 14 : isRoot ? 36 : 28
-        const tw = Math.ceil(Math.max(labelW, ...lines.map(l => measureText(l, 10.5)), 0)) + 28
+        const h = lc > 0 ? 32 + lc * 15 : isRoot ? 44 : 32
+        const tw = Math.ceil(Math.max(labelW, ...lines.map(l => measureText(l, 10.5)), 0)) + 32
         tn.h = h
+        tn.tw = tw
         nodeInfo.set(tn.node.id, { lines, tw, h, accent: DIM_COLORS[tn.node.cognitive_dimension] || DIM_COLORS.general, isRoot })
       }
       tn.children.forEach(computeDims)
@@ -136,7 +143,7 @@ export default function MindCanvas() {
     const pairs = new Set<string>()
     ;(function walk(tn: TreeNode) { for (const c of tn.children) { if (tn.node.id !== '__vr__') pairs.add(`${tn.node.id}->${c.node.id}`); walk(c) } })(root)
     return { treeNodes: result, parentPairs: pairs, totalW: Math.max(1200, maxX + MARGIN + CANVAS_PAD), totalH: Math.max(800, bottom + MARGIN + CANVAS_PAD) }
-  }, [nodes])
+  }, [nodes, collapsedSet])
 
   const posMap = useMemo(() => {
     const m = new Map<string, { x: number; y: number }>()
@@ -150,6 +157,23 @@ export default function MindCanvas() {
   }, [])
 
   useEffect(() => { transform.current = { x: 40, y: 40, scale: 1 }; requestAnimationFrame(applyTransform) }, [nodes, applyTransform])
+
+  // Check if node has children in original data
+  const nodeHasChildren = useMemo(() => {
+    const childIds = new Set<string>()
+    nodes.forEach(n => { if (n.parent_id) childIds.add(n.parent_id) })
+    return childIds
+  }, [nodes])
+
+  const toggleCollapse = useCallback((nodeId: string, e: React.MouseEvent) => {
+    e.stopPropagation()
+    setCollapsedSet(prev => {
+      const next = new Set(prev)
+      if (next.has(nodeId)) next.delete(nodeId)
+      else next.add(nodeId)
+      return next
+    })
+  }, [])
 
   useEffect(() => {
     const el = containerRef.current; if (!el) return
@@ -174,7 +198,7 @@ export default function MindCanvas() {
     treeNodes.forEach((t) => {
       const desc = t.node.description || ''
       const labelW = measureText(t.node.label, t.isRoot ? 14 : 12.5)
-      const maxLineW = Math.max(labelW, 180) - 8
+      const maxLineW = Math.max(labelW, 200) - 8
       let descLines: string[] = []
       if (desc) {
         let cur = ''
@@ -184,18 +208,18 @@ export default function MindCanvas() {
         }
         if (cur) descLines.push(cur)
       }
-      const tw = Math.min(Math.ceil(Math.max(labelW, ...descLines.map(l => measureText(l, 10.5)), 0)) + 28, 480)
-      const th = descLines.length > 0 ? 28 + descLines.length * 14 : t.isRoot ? 36 : 28
+      const tw = Math.min(Math.ceil(Math.max(labelW, ...descLines.map(l => measureText(l, 10.5)), 0)) + 32, 500)
+      const th = descLines.length > 0 ? 32 + descLines.length * 15 : t.isRoot ? 44 : 32
       const rx = t.x - tw / 2, ry = t.y - th / 2
       svgContent += `<g>`
       if (desc) svgContent += `<title>${escapeXml(desc)}</title>`
-      svgContent += `<rect x="${rx}" y="${ry}" width="${tw}" height="${th}" rx="6" fill="${t.isRoot ? C.primary : C.bg}" stroke="${t.isRoot ? C.primary : C.border}" stroke-width="${t.isRoot ? 0 : 1}"/>`
-      if (!t.isRoot) svgContent += `<rect x="${rx + 1}" y="${ry + 5}" width="3" height="${Math.min(th - 10, 18)}" fill="${t.accent}" rx="1.5"/>`
+      svgContent += `<rect x="${rx}" y="${ry}" width="${tw}" height="${th}" rx="6" fill="${t.isRoot ? C.primary : C.bg}" stroke="${t.isRoot ? C.primary : C.borderLight}" stroke-width="${t.isRoot ? 0 : 1}"/>`
+      if (!t.isRoot) svgContent += `<rect x="${rx + 1}" y="${ry + 6}" width="3" height="${Math.min(th - 12, 20)}" fill="${t.accent}" rx="1.5"/>`
       const tc = t.isRoot ? '#fff' : C.text
       const descH = descLines.length > 0 ? (descLines.length - 1) * 7 : 0
-      const ly = descLines.length > 0 ? t.y - 3 - descH : t.y + th / 2
+      const ly = descLines.length > 0 ? t.y - 4 - descH : t.y + th / 2
       svgContent += `<text x="${t.x}" y="${ly}" text-anchor="middle" dominant-baseline="central" fill="${tc}" font-size="${t.isRoot ? 14 : 12.5}" font-weight="500" font-family="system-ui,sans-serif">${escapeXml(t.node.label)}</text>`
-      descLines.forEach((l, li) => svgContent += `<text x="${t.x}" y="${ly + 13 + li * 13}" text-anchor="middle" dominant-baseline="central" fill="${C.muted}" font-size="10.5" font-family="system-ui,sans-serif">${escapeXml(l)}</text>`)
+      descLines.forEach((l, li) => svgContent += `<text x="${t.x}" y="${ly + 14 + li * 14}" text-anchor="middle" dominant-baseline="central" fill="${t.isRoot ? 'rgba(255,255,255,0.7)' : C.muted}" font-size="10.5" font-family="system-ui,sans-serif">${escapeXml(l)}</text>`)
       svgContent += `</g>`
     })
     const svgW = totalW + PAD * 2, svgH = totalH + PAD * 2
@@ -205,13 +229,13 @@ export default function MindCanvas() {
 <html lang="zh-CN"><head><meta charset="UTF-8"><title>${escapeXml(title)}</title>
 <style>
 *{margin:0;padding:0;box-sizing:border-box}
-body{background:#1e1e2e;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;padding:50px 20px;overflow:hidden}
-.container{background:#1e1e2e;border-radius:10px;border:1px solid #383850;overflow:hidden;cursor:grab}
+body{background:#1e1e1e;display:flex;justify-content:center;align-items:flex-start;min-height:100vh;padding:50px 20px;overflow:hidden}
+.container{background:#1e1e1e;border-radius:10px;border:1px solid #3c3c3c;overflow:hidden;cursor:grab}
 .container:active{cursor:grabbing}
 svg{display:block}
 .toolbar{position:fixed;top:16px;right:16px;display:flex;gap:6px;z-index:10}
-.toolbar button{background:#2a2a3c;border:1px solid #383850;border-radius:6px;padding:5px 12px;font-size:12px;color:#8b8fa3;cursor:pointer}
-.toolbar button:hover{background:#45456a;color:#cdd6f4}
+.toolbar button{background:#2a2a2a;border:1px solid #3c3c3c;border-radius:6px;padding:5px 12px;font-size:12px;color:#8b8fa3;cursor:pointer}
+.toolbar button:hover{background:#3c3c3c;color:#d4d4d4}
 .toolbar .level{font-size:11px;color:#6b6f7a;padding:5px 8px}
 </style></head><body>
 <div class="toolbar">
@@ -222,7 +246,7 @@ svg{display:block}
 </div>
 <div class="container" id="container">
 <svg xmlns="http://www.w3.org/2000/svg" width="${svgW}" height="${svgH}">
-<rect width="${svgW}" height="${svgH}" fill="#1e1e2e"/>
+<rect width="${svgW}" height="${svgH}" fill="#1e1e1e"/>
 <g id="tg" transform="translate(${PAD},${PAD})">
 ${svgContent}
 </g>
@@ -254,10 +278,9 @@ ${svgContent}
 
   return (
     <div ref={containerRef} className="flex-[1.5] relative overflow-hidden cursor-grab select-none rounded-xl border border-border" style={{ background: C.bg }}>
-      {/* Export button */}
       <button
         onClick={downloadHTML}
-        className="absolute top-3 right-3 z-30 flex items-center gap-1 text-[11px] text-[#6b6f7a] hover:text-[#8b8fa3] transition-colors px-2 py-1 rounded-md hover:bg-[#2a2a3c]"
+        className="absolute top-3 right-3 z-30 flex items-center gap-1 text-[11px] text-[#6b6f7a] hover:text-[#8b8fa3] transition-colors px-2 py-1 rounded-md hover:bg-[#2a2a2a]"
       >
         <Download className="w-3 h-3" />
         导出
@@ -290,9 +313,9 @@ ${svgContent}
           {treeNodes.map((t) => {
             const warn = t.node.status === 'warning'
             const lineCount = t.descLines.length
-            const th = lineCount > 0 ? 28 + lineCount * 14 : t.isRoot ? 36 : 28
+            const th = lineCount > 0 ? 32 + lineCount * 15 : t.isRoot ? 44 : 32
             const rx = t.x - t.tw / 2, ry = t.y - th / 2
-            const labelY = lineCount > 0 ? t.y - 3 - (lineCount - 1) * 7 : t.y
+            const labelY = lineCount > 0 ? t.y - 4 - (lineCount - 1) * 7.5 : t.y
             const isSelected = selectedNodeId === t.node.id
 
             return (
@@ -310,35 +333,40 @@ ${svgContent}
               >
                 <rect
                   x={rx} y={ry} width={t.tw} height={th} rx={6}
-                  fill={t.isRoot ? C.primary : warn ? C.errorLight : '#2a2a3c'}
-                  stroke={isSelected ? C.primary : t.isRoot ? C.primary : warn ? '#fca5a5' : C.border}
-                  strokeWidth={isSelected ? 1.5 : t.isRoot ? 0 : 1}
+                  fill={t.isRoot ? C.primary : warn ? C.errorLight : '#2a2a2a'}
+                  stroke={isSelected ? C.primary : t.isRoot ? C.primary : warn ? '#fca5a5' : C.borderLight}
+                  strokeWidth={isSelected ? 2 : t.isRoot ? 0 : 1}
                 />
                 {!t.isRoot && !warn && (
-                  <rect x={rx + 1} y={ry + 5} width={3} height={Math.min(th - 10, 18)} fill={t.accent} rx={1.5} />
+                  <rect x={rx + 1} y={ry + 6} width={3} height={Math.min(th - 12, 20)} fill={t.accent} rx={1.5} />
+                )}
+                {/* Expand/collapse button */}
+                {nodeHasChildren.has(t.node.id) && (
+                  <g onClick={(e) => toggleCollapse(t.node.id, e)} style={{ cursor: 'pointer' }}>
+                    <circle cx={rx + t.tw - 10} cy={t.y} r={7}
+                      fill={isSelected ? C.primary : '#3c3c3c'}
+                      stroke={C.borderLight} strokeWidth={1} />
+                    <text x={rx + t.tw - 10} y={t.y} textAnchor="middle" dominantBaseline="central"
+                      fill="#d4d4d4" style={{ fontSize: 11, fontWeight: 700, fontFamily: 'sans-serif' }}>
+                      {collapsedSet.has(t.node.id) ? '+' : '−'}
+                    </text>
+                  </g>
                 )}
                 <text
                   x={t.x} y={labelY}
                   textAnchor="middle" dominantBaseline="central"
                   fill={t.isRoot ? '#fff' : warn ? C.error : C.text}
-                  style={{
-                    fontSize: t.isRoot ? 14 : 12.5,
-                    fontFamily: "'Inter','Noto Sans SC',-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif",
-                    fontWeight: 500,
-                  }}
+                  style={{ fontSize: t.isRoot ? 14 : 12.5, fontWeight: 500, fontFamily: "'Inter','Noto Sans SC',sans-serif" }}
                 >
                   {t.node.label}
                 </text>
                 {t.descLines.map((line, li) => (
                   <text
                     key={li}
-                    x={t.x} y={labelY + 13 + li * 13}
+                    x={t.x} y={labelY + 14 + li * 14}
                     textAnchor="middle" dominantBaseline="central"
                     fill={t.isRoot ? 'rgba(255,255,255,0.7)' : C.muted}
-                    style={{
-                      fontSize: 10.5,
-                      fontFamily: "'Inter','Noto Sans SC',-apple-system,BlinkMacSystemFont,'PingFang SC','Microsoft YaHei',sans-serif",
-                    }}
+                    style={{ fontSize: 10.5, fontFamily: "'Inter','Noto Sans SC',sans-serif" }}
                   >
                     {line}
                   </text>
@@ -351,9 +379,8 @@ ${svgContent}
 
       {/* Tooltip */}
       {tooltip && (
-        <div
-          className="absolute z-50 text-[11px] px-2.5 py-1.5 rounded-md max-w-[220px] pointer-events-none leading-relaxed"
-          style={{ background: '#181825', color: '#cdd6f4', border: '1px solid #383850', left: tooltip.x + 12, top: tooltip.y - 8 }}
+        <div className="absolute z-50 text-[11px] px-2.5 py-1.5 rounded-md max-w-[220px] pointer-events-none leading-relaxed"
+          style={{ background: '#333', color: C.text, border: `1px solid ${C.border}`, left: tooltip.x + 12, top: tooltip.y - 8 }}
         >
           {tooltip.text}
         </div>
@@ -368,16 +395,14 @@ ${svgContent}
 
       {/* Toast */}
       {toast && (
-        <div
-          className="absolute bottom-8 right-4 text-white text-[11px] px-3 py-1.5 rounded-md z-40 animate-settle-in"
-          style={{ background: C.success }}
-        >
+        <div className="absolute bottom-8 right-4 text-white text-[11px] px-3 py-1.5 rounded-md z-40 animate-settle-in"
+          style={{ background: C.success }}>
           {toast}
         </div>
       )}
 
       {/* Hint */}
-      <div className="absolute bottom-3 right-3 text-[10px] text-[#4a4d58] pointer-events-none">
+      <div className="absolute bottom-3 right-3 text-[10px] text-[#4a4d58] pointer-events-none z-10">
         滚轮缩放 · 拖拽平移
       </div>
     </div>

@@ -84,15 +84,7 @@ export default function ChatPanel() {
     setInput(''); setAttachedFile(null); setSelectedNodeId(null); setStreaming(true)
     let res: Response
     try {
-      // EDEP: Trace boundary - API call
-      if (window.EDEP) {
-        EDEP.trace({ trace_id: tid, module: 'ChatPanel', method: 'api-call', direction: 'OUTBOUND', value: { sessionId, ctxNodeId, textLength: aiText.length } })
-      }
-      res = await api('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json', 'X-Trace-Id': tid }, body: JSON.stringify({ session_id: sessionId, text: aiText, context_node_id: ctxNodeId, display_text: displayText }) })
-      // EDEP: Trace boundary - API response
-      if (window.EDEP) {
-        EDEP.trace({ trace_id: tid, module: 'ChatPanel', method: 'api-call', direction: 'INBOUND', result: { status: res.status, ok: res.ok, contentType: res.headers.get('content-type') } })
-      }
+      res = await api('/api/chat', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ session_id: sessionId, text: aiText, context_node_id: ctxNodeId, display_text: displayText }) })
     } catch (err: any) {
       setStreaming(false)
       // 移除刚才发送的用户消息
