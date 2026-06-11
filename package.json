@@ -1,6 +1,6 @@
 {
-  "name": "zhitu",
-  "productName": "知图",
+  "name": "mingxin",
+  "productName": "明心",
   "version": "1.0.0",
   "description": "AI 知识图谱学习助手",
   "main": "src/main/main.cjs",
@@ -16,8 +16,8 @@
     "electron:dir": "vite build && electron-builder --dir"
   },
   "build": {
-    "appId": "com.zhitu.app",
-    "productName": "知图",
+    "appId": "com.mingxin.app",
+    "productName": "明心",
     "directories": {
       "output": "release"
     },

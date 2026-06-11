@@ -41,7 +41,7 @@ module.exports = {
   SERVER_DIR: path.join(__dirname, '..', 'server'),
 
   // App info
-  APP_NAME: '知图',
+  APP_NAME: '明心',
   APP_DESCRIPTION: 'AI 知识图谱学习助手',
 
   // Window

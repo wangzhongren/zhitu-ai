@@ -44,7 +44,7 @@ export default function App() {
               <div className="flex-1 flex items-center justify-center bg-background">
                 <div className="text-center">
                   <h2 className="text-[15px] font-medium text-foreground/80 mb-1 tracking-tight">
-                    知图
+                    明心
                   </h2>
                   <p className="text-[13px] text-muted-foreground/60">
                     AI 知识图谱学习助手

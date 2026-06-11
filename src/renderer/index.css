@@ -2,7 +2,7 @@
 @tailwind components;
 @tailwind utilities;
 
-/* ===== 知图 — VS Code Dark Theme ===== */
+/* ===== 明心 — VS Code Dark Theme ===== */
 @layer base {
   :root {
     /* VSCode Dark+ theme */

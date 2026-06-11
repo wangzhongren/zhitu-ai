@@ -1,4 +1,4 @@
-# 知图 · AI 知识图谱学习助手
+# 明心 · AI 知识图谱学习助手
 
 通过 AI 对话帮你梳理技术知识，自动生成结构化知识图谱（思维导图），把零散的学习变成清晰的脉络。
 
@@ -14,7 +14,7 @@
 
 学新技术时的痛点：看了很多文章脑子还是一团浆糊，和 AI 聊完就忘，知识没有沉淀。
 
-知图把「对话学习」和「知识图谱」绑在一起 —— 左边聊，右边自动长出结构化图谱。学完一个话题，图就是你的笔记。
+明心把「对话学习」和「知识图谱」绑在一起 —— 左边聊，右边自动长出结构化图谱。学完一个话题，图就是你的笔记。
 
 ## 功能
 
@@ -54,8 +54,8 @@
 ### 1. 安装
 
 ```bash
-git clone https://github.com/wangzhongren/zhitu-ai.git
-cd zhitu-ai
+git clone https://github.com/wangzhongren/mingxin-ai.git
+cd mingxin-ai
 npm install
 ```
 
@@ -97,7 +97,7 @@ npm run electron:build
 ## 项目结构
 
 ```
-zhitu-ai/
+mingxin-ai/
 ├── src/
 │   ├── main/                    # Electron 主进程
 │   │   ├── main.cjs             # Electron 入口

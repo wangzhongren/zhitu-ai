@@ -82,7 +82,7 @@ export default function Sidebar({ onEnter, onNew, refreshKey, activeSessionId, o
       {/* Header */}
       <div className="flex items-center gap-2 px-4 pt-2 pb-1 shrink-0">
         <span className="text-[13px] font-semibold tracking-tight text-sidebar-foreground/90">
-          知图
+          明心
         </span>
       </div>
 
